@@ -19,7 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Initialize environ
 env = environ.Env(
-    DEBUG=(bool, False) # Default to False for safety
+    DEBUG=(bool, True) # Default to False for safety
 )
 
 environ.Env.read_env(BASE_DIR / ".env")
