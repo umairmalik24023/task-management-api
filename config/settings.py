@@ -11,40 +11,28 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 from pathlib import Path
-import environ, os
+import environ, os, dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-# Initialize environ
+# Initialize environ with native fallback defaults
 env = environ.Env(
-    DEBUG=(bool, True) # Default to False for safety
+    DEBUG=(bool, False),
+    SECRET_KEY=(str, 'django-insecure-local-dev-fallback-key'),
+    DATABASE_URL=(str, '')
 )
 
-environ.Env.read_env(BASE_DIR / ".env")
+# Only read the local .env file if it actually exists (keeps local testing alive, safe for Railway)
+if os.path.exists(BASE_DIR / ".env"):
+    environ.Env.read_env(BASE_DIR / ".env")
 
-SECRET_KEY = env("SECRET_KEY")
-DEBUG = env("DEBUG")
+# Assign variables cleanly utilizing the env engine
+SECRET_KEY = env('SECRET_KEY')
+DEBUG = env('DEBUG')
 
-# DATABASES = {
-#     "default": env.db("DATABASE_URL"),
-# }
+# Safe hosting boundaries
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.railway.app']
 
-DATABASES = {
-    'default': env.db('DATABASE_URL', default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
-}
-
-
-# ALLOWED_HOSTS = []
-
-# ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
-
-ALLOWED_HOSTS = [
-    'task-management-api-production-82af.up.railway.app',
-    'localhost',
-    '127.0.0.1',
-]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://task-management-api-production-82af.up.railway.app",
@@ -69,7 +57,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Crucial for static files on Railway
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -77,6 +65,21 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# Database routing rule to adapt dynamically between local testing and Railway production
+DATABASES = {
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600
+    )
+}
+
+
+# Static files management configurations
+STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+
 
 ROOT_URLCONF = 'config.urls'
 
@@ -96,17 +99,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
-
-
-# Database
-# https://docs.djangoproject.com/en/6.1/ref/settings/#databases
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
 
 
 # Password validation
@@ -139,19 +131,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.1/howto/static-files/
-
-# STATIC_URL = 'static/'
-# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-
-# Optional but recommended: pip install whitenoise to help Django serve assets smoothly
-# If installed, add 'whitenoise.middleware.WhiteNoiseMiddleware' right under SecurityMiddleware
 
 
 
